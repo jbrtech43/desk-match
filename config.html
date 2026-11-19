@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#3D4A8F">
+  <title>Add Desk Match to this chat</title>
+  <script src="https://res.cdn.office.net/teams-js/2.19.0/js/MicrosoftTeams.min.js" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      color-scheme: light dark;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: #f3f4f8;
+      color: #1e2433;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { background: #1c1f27; color: #eef0f5; }
+      .card { background: #272b36; }
+      .muted { color: #a5adbf; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+    .card { width: min(100%, 440px); padding: 32px; border-radius: 16px; background: #fff; box-shadow: 0 12px 36px #1e24331a; }
+    .icon { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 14px; background: #3d4a8f; color: #ffe27a; font-size: 28px; }
+    h1 { margin: 22px 0 8px; font-size: 24px; line-height: 1.2; }
+    p { margin: 0; line-height: 1.55; }
+    .muted { margin-top: 10px; color: #5b6478; font-size: 14px; }
+    #error { margin-top: 16px; color: #b42318; font-size: 14px; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="icon" aria-hidden="true">🃏</div>
+    <h1>Add Desk Match to this chat</h1>
+    <p>Bring a quick memory game to your group chat. Match the pairs and try to beat your best score.</p>
+    <p class="muted">Select <strong>Save</strong> above to add the game tab to this chat.</p>
+    <p id="error" role="alert" hidden>Desk Match couldn't finish setup. Close this page and try again.</p>
+  </main>
+  <script>
+    (function () {
+      var gameUrl = "https://jbrtech43.github.io/desk-match/";
+      var errorEl = document.getElementById("error");
+
+      microsoftTeams.app.initialize().then(function () {
+        microsoftTeams.pages.config.setValidityState(true);
+        microsoftTeams.pages.config.registerOnSaveHandler(function (saveEvent) {
+          microsoftTeams.pages.config.setConfig({
+            entityId: "deskMatchGroupChat",
+            contentUrl: gameUrl,
+            suggestedDisplayName: "Desk Match",
+            websiteUrl: gameUrl
+          }).then(function () {
+            saveEvent.notifySuccess();
+          }).catch(function (error) {
+            console.error("Desk Match tab configuration failed.", error);
+            errorEl.hidden = false;
+            saveEvent.notifyFailure("Desk Match couldn't finish setup. Please try again.");
+          });
+        });
+      }).catch(function (error) {
+        console.error("Teams initialization failed.", error);
+        errorEl.hidden = false;
+      });
+    })();
+  </script>
+</body>
+</html>

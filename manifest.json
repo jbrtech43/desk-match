@@ -1,7 +1,7 @@
 {
   "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.17/MicrosoftTeams.schema.json",
   "manifestVersion": "1.17",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "id": "a6b2bc09-3ef1-4f65-b935-89eea9ec15f1",
   "developer": {
     "name": "James Haywood",
@@ -30,6 +30,13 @@
       "websiteUrl": "https://jbrtech43.github.io/desk-match/",
       "scopes": ["personal"],
       "supportedPlatform": ["desktop", "mobile"]
+    }
+  ],
+  "configurableTabs": [
+    {
+      "configurationUrl": "https://jbrtech43.github.io/desk-match/config.html",
+      "canUpdateConfiguration": true,
+      "scopes": ["groupChat"]
     }
   ],
   "permissions": ["identity", "messageTeamMembers"],
