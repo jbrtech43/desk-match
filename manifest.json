@@ -1,0 +1,37 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.17/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.17",
+  "version": "1.0.0",
+  "id": "a6b2bc09-3ef1-4f65-b935-89eea9ec15f1",
+  "developer": {
+    "name": "James Haywood",
+    "websiteUrl": "https://jbrtech43.github.io/desk-match/",
+    "privacyUrl": "https://jbrtech43.github.io/desk-match/privacy.html",
+    "termsOfUseUrl": "https://jbrtech43.github.io/desk-match/terms.html"
+  },
+  "name": {
+    "short": "Desk Match",
+    "full": "Desk Match Memory Game"
+  },
+  "description": {
+    "short": "A quick card-matching game for the desk.",
+    "full": "Flip cards, find matching pairs, and beat your best score in Desk Match."
+  },
+  "icons": {
+    "outline": "outline.png",
+    "color": "color.png"
+  },
+  "accentColor": "#3D4A8F",
+  "staticTabs": [
+    {
+      "entityId": "deskMatch",
+      "name": "Desk Match",
+      "contentUrl": "https://jbrtech43.github.io/desk-match/",
+      "websiteUrl": "https://jbrtech43.github.io/desk-match/",
+      "scopes": ["personal"],
+      "supportedPlatform": ["desktop", "mobile"]
+    }
+  ],
+  "permissions": ["identity", "messageTeamMembers"],
+  "validDomains": ["jbrtech43.github.io"]
+}

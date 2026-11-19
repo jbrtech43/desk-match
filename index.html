@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Desk Match</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<!-- Microsoft Teams JavaScript SDK (lets the page run as a Teams tab and follow the Teams theme) -->
+<script src="https://res.cdn.office.net/teams-js/2.19.0/js/MicrosoftTeams.min.js" crossorigin="anonymous"></script>
+<style>
+  :root {
+    --desk: #E7EBF0;
+    --surface: #FFFFFF;
+    --ink: #1E2433;
+    --muted: #5B6478;
+    --back: #3D4A8F;
+    --back-line: #5363B5;
+    --note-1: #FFE27A;
+    --note-2: #B9E8CB;
+    --note-3: #FFC6B8;
+    --note-4: #C9D8FF;
+    --focus: #2A4BD7;
+    --shadow: 0 2px 0 rgba(30,36,51,.18);
+    color-scheme: light;
+  }
+  :root[data-theme="dark"] {
+    --desk: #1C1F27;
+    --surface: #272B36;
+    --ink: #EEF0F5;
+    --muted: #A5ADBF;
+    --back: #4A57A8;
+    --back-line: #6474C9;
+    --note-1: #E8C95A;
+    --note-2: #8FCCA7;
+    --note-3: #E9A493;
+    --note-4: #9FB4F2;
+    --focus: #9DB1FF;
+    --shadow: 0 2px 0 rgba(0,0,0,.45);
+    color-scheme: dark;
+  }
+  :root[data-theme="contrast"] {
+    --desk: #000000;
+    --surface: #000000;
+    --ink: #FFFFFF;
+    --muted: #FFFFFF;
+    --back: #000000;
+    --back-line: #FFFF00;
+    --note-1: #FFFFFF; --note-2: #FFFFFF; --note-3: #FFFFFF; --note-4: #FFFFFF;
+    --focus: #FFFF00;
+    --shadow: none;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    background: var(--desk);
+    color: var(--ink);
+    font-family: "Bricolage Grotesque", "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.45;
+  }
+
+  main { max-width: 620px; margin: 0 auto; padding: 20px 16px 32px; }
+
+  header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 20px; margin-bottom: 16px; }
+  h1 { font-size: clamp(1.9rem, 6vw, 2.6rem); font-weight: 800; line-height: 1; margin: 0; letter-spacing: -0.02em; }
+  .greeting { margin: 6px 0 0; color: var(--muted); font-size: .95rem; }
+
+  .stats { display: flex; gap: 18px; font-variant-numeric: tabular-nums; }
+  .stat { display: flex; flex-direction: column; }
+  .stat b { font-size: 1.4rem; font-weight: 600; line-height: 1.1; }
+  .stat span { font-size: .8rem; color: var(--muted); }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .controls button {
+    font: inherit; font-weight: 600; font-size: .95rem;
+    padding: 8px 14px; border-radius: 999px; cursor: pointer;
+    background: var(--surface); color: var(--ink);
+    border: 2px solid var(--ink);
+  }
+  .controls button[aria-pressed="true"] { background: var(--ink); color: var(--desk); }
+  .controls .spacer { flex: 1; }
+
+  .board { display: grid; gap: 10px; grid-template-columns: repeat(var(--cols, 4), 1fr); }
+
+  .tile {
+    position: relative; aspect-ratio: 1; padding: 0; border: 0; cursor: pointer;
+    background: transparent; perspective: 600px; border-radius: 6px;
+  }
+  .tile:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+  .face {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    border-radius: 6px; backface-visibility: hidden;
+    transition: transform .35s cubic-bezier(.3,.7,.3,1);
+    box-shadow: var(--shadow);
+  }
+  .front {
+    /* the hidden side: a stack of ruled index cards */
+    background:
+      repeating-linear-gradient(to bottom, transparent 0 13px, var(--back-line) 13px 14px),
+      var(--back);
+    border: 2px solid var(--back-line);
+  }
+  .back {
+    transform: rotateY(180deg);
+    font-size: clamp(1.4rem, 7vw, 2.4rem);
+    color: var(--ink);
+    border: 2px solid transparent;
+  }
+  :root[data-theme="contrast"] .back { border-color: #FFFFFF; color: #000; }
+  .tile.open .front { transform: rotateY(-180deg); }
+  .tile.open .back  { transform: rotateY(0); }
+  .tile.matched { cursor: default; }
+  .tile.matched .back { transform: rotateY(0) rotate(var(--tilt, 0deg)); }
+
+  .status { min-height: 1.5em; margin: 16px 0 0; color: var(--muted); }
+
+  .win {
+    margin-top: 16px; padding: 18px 20px; border-radius: 6px;
+    background: var(--note-1); color: #1E2433;
+    transform: rotate(-1deg); box-shadow: var(--shadow);
+  }
+  :root[data-theme="contrast"] .win { background: #000; color: #fff; border: 2px solid #FFFF00; transform: none; }
+  .win h2 { margin: 0 0 4px; font-size: 1.4rem; font-weight: 800; }
+  .win p { margin: 0 0 12px; }
+  .win button {
+    font: inherit; font-weight: 600; padding: 8px 16px; border-radius: 999px;
+    border: 2px solid currentColor; background: transparent; color: inherit; cursor: pointer;
+  }
+  .win button:focus-visible, .controls button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+
+  @media (max-width: 420px) { .board { gap: 6px; } .stats { gap: 12px; } }
+  @media (prefers-reduced-motion: reduce) { .face { transition: none; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Desk Match</h1>
+      <p class="greeting" id="greeting">Flip two cards. Find all the pairs.</p>
+    </div>
+    <div class="stats" aria-live="off">
+      <div class="stat"><b id="moves">0</b><span>moves</span></div>
+      <div class="stat"><b id="time">0:00</b><span>time</span></div>
+      <div class="stat"><b id="best">–</b><span>best</span></div>
+    </div>
+  </header>
+
+  <div class="controls" role="group" aria-label="Game options">
+    <button type="button" data-size="16" aria-pressed="true">Quick · 8 pairs</button>
+    <button type="button" data-size="24" aria-pressed="false">Longer · 12 pairs</button>
+    <span class="spacer"></span>
+    <button type="button" id="restart">New game</button>
+  </div>
+
+  <div class="board" id="board" aria-label="Cards"></div>
+
+  <p class="status" id="status" role="status"></p>
+
+  <section class="win" id="win" hidden>
+    <h2>All pairs found</h2>
+    <p id="winText"></p>
+    <button type="button" id="again">Play again</button>
+  </section>
+</main>
+
+<script>
+(function () {
+  const ICONS = [
+    ["☕","coffee"],["📎","paper clip"],["📌","pin"],["✏️","pencil"],
+    ["📅","calendar"],["💡","light bulb"],["🎧","headphones"],["🪴","plant"],
+    ["📊","chart"],["🧩","puzzle piece"],["🍩","doughnut"],["🔔","bell"]
+  ];
+  const NOTE_COLORS = ["var(--note-1)","var(--note-2)","var(--note-3)","var(--note-4)"];
+
+  const board = document.getElementById("board");
+  const movesEl = document.getElementById("moves");
+  const timeEl = document.getElementById("time");
+  const bestEl = document.getElementById("best");
+  const statusEl = document.getElementById("status");
+  const winEl = document.getElementById("win");
+  const winText = document.getElementById("winText");
+  const sizeButtons = document.querySelectorAll("[data-size]");
+
+  let size = 16, first = null, lock = false, moves = 0, found = 0;
+  let startTime = null, timer = null;
+
+  // ---------- storage (best scores, per browser) ----------
+  function bestKey() { return "deskmatch-best-" + size; }
+  function readBest() {
+    try { return JSON.parse(localStorage.getItem(bestKey())); } catch (e) { return null; }
+  }
+  function writeBest(v) {
+    try { localStorage.setItem(bestKey(), JSON.stringify(v)); } catch (e) {}
+  }
+  function showBest() {
+    const b = readBest();
+    bestEl.textContent = b ? b.moves + " mv" : "–";
+  }
+
+  // ---------- helpers ----------
+  function shuffle(a) {
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+  function fmt(ms) {
+    const s = Math.floor(ms / 1000);
+    return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+  }
+  function tick() { timeEl.textContent = fmt(Date.now() - startTime); }
+
+  // ---------- game ----------
+  function newGame() {
+    clearInterval(timer); timer = null; startTime = null;
+    first = null; lock = false; moves = 0; found = 0;
+    movesEl.textContent = "0"; timeEl.textContent = "0:00";
+    statusEl.textContent = ""; winEl.hidden = true;
+    showBest();
+
+    const pairs = shuffle(ICONS.slice()).slice(0, size / 2);
+    const deck = shuffle(pairs.concat(pairs).map((p, i) => ({ icon: p[0], name: p[1] })));
+    board.style.setProperty("--cols", size === 16 ? 4 : 6);
+    board.innerHTML = "";
+
+    deck.forEach((card, i) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "tile";
+      btn.dataset.icon = card.icon;
+      btn.dataset.name = card.name;
+      btn.setAttribute("aria-label", "Card " + (i + 1) + ", face down");
+      const color = NOTE_COLORS[ICONS.findIndex(x => x[0] === card.icon) % NOTE_COLORS.length];
+      btn.innerHTML =
+        '<span class="face front" aria-hidden="true"></span>' +
+        '<span class="face back" aria-hidden="true" style="background:' + color + '">' + card.icon + '</span>';
+      btn.style.setProperty("--tilt", ((Math.random() * 6) - 3).toFixed(1) + "deg");
+      btn.addEventListener("click", () => flip(btn, i));
+      board.appendChild(btn);
+    });
+  }
+
+  function flip(btn, i) {
+    if (lock || btn.classList.contains("open") || btn.classList.contains("matched")) return;
+    if (!startTime) { startTime = Date.now(); timer = setInterval(tick, 250); }
+
+    btn.classList.add("open");
+    btn.setAttribute("aria-label", "Card " + (i + 1) + ", " + btn.dataset.name);
+
+    if (!first) { first = { btn, i }; return; }
+
+    moves++; movesEl.textContent = moves;
+    const a = first; first = null;
+
+    if (a.btn.dataset.icon === btn.dataset.icon) {
+      [a.btn, btn].forEach(b => {
+        b.classList.add("matched");
+        b.setAttribute("aria-disabled", "true");
+      });
+      found++;
+      statusEl.textContent = "Match: " + btn.dataset.name + ". " + (size / 2 - found) + " pairs left.";
+      if (found === size / 2) finish();
+    } else {
+      lock = true;
+      statusEl.textContent = "No match. " + a.btn.dataset.name + " and " + btn.dataset.name + ".";
+      setTimeout(() => {
+        [[a.btn, a.i], [btn, i]].forEach(([b, n]) => {
+          b.classList.remove("open");
+          b.setAttribute("aria-label", "Card " + (n + 1) + ", face down");
+        });
+        lock = false;
+      }, 850);
+    }
+  }
+
+  function finish() {
+    clearInterval(timer);
+    const elapsed = Date.now() - startTime;
+    timeEl.textContent = fmt(elapsed);
+    const prev = readBest();
+    const isBest = !prev || moves < prev.moves || (moves === prev.moves && elapsed < prev.ms);
+    if (isBest) writeBest({ moves, ms: elapsed });
+    showBest();
+    winText.textContent = moves + " moves in " + fmt(elapsed) + "." + (isBest ? " That’s your new best." : "");
+    winEl.hidden = false;
+    document.getElementById("again").focus();
+  }
+
+  sizeButtons.forEach(b => b.addEventListener("click", () => {
+    size = Number(b.dataset.size);
+    sizeButtons.forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    newGame();
+  }));
+  document.getElementById("restart").addEventListener("click", newGame);
+  document.getElementById("again").addEventListener("click", newGame);
+
+  // ---------- Microsoft Teams integration ----------
+  function applyTheme(t) {
+    const map = { default: "light", dark: "dark", contrast: "contrast" };
+    document.documentElement.setAttribute("data-theme", map[t] || "light");
+  }
+  // Outside Teams, follow the browser's light/dark setting
+  if (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches) applyTheme("dark");
+
+  if (window.microsoftTeams && microsoftTeams.app) {
+    microsoftTeams.app.initialize().then(() => {
+      microsoftTeams.app.getContext().then(ctx => {
+        if (ctx.app && ctx.app.theme) applyTheme(ctx.app.theme);
+        const name = ctx.user && ctx.user.displayName;
+        if (name) document.getElementById("greeting").textContent =
+          "Hi " + name.split(" ")[0] + ". Flip two cards. Find all the pairs.";
+      });
+      microsoftTeams.app.registerOnThemeChangeHandler(applyTheme);
+      microsoftTeams.app.notifySuccess();
+    }).catch(() => { /* not running inside Teams: the game still works */ });
+  }
+
+  newGame();
+})();
+</script>
+</body>
+</html>
